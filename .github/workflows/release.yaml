@@ -43,7 +43,7 @@ jobs:
 
       - name: Confirm package version matches
         run: |
-          tar -xzOf roku-tv-${{ steps.ver.outputs.version }}.tgz pkg/companion/manifest.json | grep "\"version\": \"${{ steps.ver.outputs.version }}\""
+          tar -xzOf roku-tv-${{ steps.ver.outputs.version }}.tgz pkg/companion/manifest.json | grep "\"version\":\"${{ steps.ver.outputs.version }}\""
 
       - name: Publish release
         run: |
