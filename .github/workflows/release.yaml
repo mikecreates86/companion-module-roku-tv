@@ -5,6 +5,7 @@ name: Build Release
 on:
   push:
     branches: [master]
+    paths: [package.json]
   workflow_dispatch:
 
 permissions:
