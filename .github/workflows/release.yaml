@@ -1,10 +1,10 @@
 name: Build Release
 
 # Builds the Companion module package and publishes it on the Releases page
-# whenever a new version number lands on the main branch.
+# whenever a new version number lands on the master branch.
 on:
   push:
-    branches: [main]
+    branches: [master]
   workflow_dispatch:
 
 permissions:
