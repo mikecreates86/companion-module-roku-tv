@@ -1,0 +1,54 @@
+name: Build Release
+
+# Builds the Companion module package and publishes it on the Releases page
+# whenever a new version number lands on the master branch.
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: yarn
+
+      - name: Read version and make sure it is new
+        id: ver
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null 2>&1; then
+            echo "Version $VERSION already has a release. Raise the version in package.json to publish a new one."
+            exit 1
+          fi
+          LATEST=$(gh release list --limit 1 --json tagName -q '.[0].tagName' | sed 's/^v//')
+          if [ -n "$LATEST" ] && [ "$(printf '%s\n%s\n' "$LATEST" "$VERSION" | sort -V | tail -1)" != "$VERSION" ]; then
+            echo "Version $VERSION is not higher than the latest release $LATEST."
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - run: yarn install --frozen-lockfile
+      - run: yarn companion-module-build
+
+      - name: Confirm package version matches
+        run: |
+          tar -xzOf roku-tv-${{ steps.ver.outputs.version }}.tgz pkg/companion/manifest.json | grep "\"version\": \"${{ steps.ver.outputs.version }}\""
+
+      - name: Publish release
+        run: |
+          gh release create "v${{ steps.ver.outputs.version }}" "roku-tv-${{ steps.ver.outputs.version }}.tgz" \
+            --title "v${{ steps.ver.outputs.version }}" --latest \
+            --notes "Download roku-tv-${{ steps.ver.outputs.version }}.tgz and import it in Companion (offline module import). Fixes: feedbacks now update live, Keyboard Search types the full text, more reliable polling and connection status."
+        env:
+          GH_TOKEN: ${{ github.token }}
